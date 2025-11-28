@@ -1,9 +1,11 @@
 from textnode import TextNode, TextType
 from htmlnode import HTMLNode
 from leafnode import LeafNode
+from parentnode import ParentNode
+from blocktype import BlockType, block_to_block_type
 import re
 
-def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
+def text_node_to_html_node(text_node: TextNode) -> LeafNode:
     match text_node.text_type:
         case TextType.PLAIN:
             return LeafNode(None, text_node.text)
@@ -118,3 +120,83 @@ def extract_markdown_images(text : str) -> list[tuple]:
 
 def extract_markdown_links(text : str) -> list[tuple]:
     return re. findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
+def markdown_to_blocks(markdown : str) -> list[str]:
+    blocks = markdown.split("\n\n")
+    
+    for i in range(len(blocks)):
+        blocks[i] = blocks[i].strip()
+
+    blocks = list(filter(lambda b: b != "", blocks))  
+    return blocks
+
+def markdown_to_html_node(markdown : str) -> HTMLNode:
+    blocks = markdown_to_blocks(markdown)
+    parent_nodes = []
+    
+    for block in blocks:
+        node = get_parent_node_from_block(block)
+        parent_nodes.append(node)
+    
+    return ParentNode("div", parent_nodes)
+
+def get_parent_node_from_block(block : str) -> ParentNode:
+    block_type = block_to_block_type(block)
+
+    match block_type:
+        case BlockType.HEADING:
+            return ParentNode(__get_heading_level(block), text_to_children(block))
+        case BlockType.CODE:
+            sanitized = block[3:-3]
+            if sanitized[0] == "\n":
+                sanitized = sanitized[1:]
+            text_node = TextNode(sanitized, TextType.PLAIN)
+
+            code_node = ParentNode("code", [text_node_to_html_node(text_node)])
+            return ParentNode("pre", [code_node])
+        case BlockType.QUOTE:
+            return ParentNode("blockquote", text_to_children(block))
+        case BlockType.UNORDERED_LIST:
+            return ParentNode("ul", __get_list_item_html_nodes(block, block_type))
+        case BlockType.ORDERED_LIST:
+            return ParentNode("ol", __get_list_item_html_nodes(block, block_type))
+        case BlockType.PARAGRAPH:
+            return ParentNode("p", text_to_children(block))
+        case _: 
+            raise Exception("Invalid Block Type")
+
+def text_to_children(text : str) -> list[LeafNode]:
+    sanitized = text.replace("\n", " ")
+    sanitized = ' '.join(sanitized.split())
+    child_text_nodes = text_to_text_nodes(sanitized)
+    return list(map(text_node_to_html_node, child_text_nodes))
+
+def __get_heading_level(text : str) -> str:
+    count = 0
+    for char in text:
+        if char == "#":
+            count += 1
+        else:
+            break
+
+    match count:
+        case 1: return "h1"
+        case 2: return "h2"
+        case 3: return "h3"
+        case 4: return "h4"
+        case 5: return "h5"
+        case _: return "h6"
+
+def __get_list_item_html_nodes(text : str, block_type : BlockType) -> list[HTMLNode]:
+    text_items = text.split("\n")
+    list_items = []
+    for item in text_items:
+        sanitized = item
+        if block_type == BlockType.UNORDERED_LIST:
+            sanitized = item[2:]
+        else:
+            sanitized = item[3:]
+        children = text_to_children(sanitized)
+        list_items.append(ParentNode("li", children))
+    return list_items
+        
