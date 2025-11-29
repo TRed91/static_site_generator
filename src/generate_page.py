@@ -30,7 +30,7 @@ def generate_page(from_path : str, template_path : str, dest_path : str, basepat
         html = template_content.replace("{{ Title }}", title)
         html = html.replace("{{ Content }}", html_string)
 
-        html = html.replace('"href="/', f'href="{basepath}')
+        html = html.replace('href="/', f'href="{basepath}')
         html = html.replace('src="/', f'src="{basepath}')
 
         if not os.path.exists(dest_path):
