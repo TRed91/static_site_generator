@@ -145,7 +145,10 @@ def get_parent_node_from_block(block : str) -> ParentNode:
 
     match block_type:
         case BlockType.HEADING:
-            return ParentNode(__get_heading_level(block), text_to_children(block))
+            heading_level = __get_heading_level(block)
+            sanitized = __sanitize_heading(block, heading_level)
+            children = text_to_children(sanitized)
+            return ParentNode(heading_level, children)
         case BlockType.CODE:
             sanitized = block[3:-3]
             if sanitized[0] == "\n":
@@ -155,7 +158,8 @@ def get_parent_node_from_block(block : str) -> ParentNode:
             code_node = ParentNode("code", [text_node_to_html_node(text_node)])
             return ParentNode("pre", [code_node])
         case BlockType.QUOTE:
-            return ParentNode("blockquote", text_to_children(block))
+            sanitized = __sanitize_quote(block)
+            return ParentNode("blockquote", text_to_children(sanitized))
         case BlockType.UNORDERED_LIST:
             return ParentNode("ul", __get_list_item_html_nodes(block, block_type))
         case BlockType.ORDERED_LIST:
@@ -187,6 +191,26 @@ def __get_heading_level(text : str) -> str:
         case 5: return "h5"
         case _: return "h6"
 
+def __sanitize_heading(text : str, heading_level : str) -> str:
+    match heading_level:
+        case "h1":
+            return text[2:]
+        case "h2":
+            return text[3:]
+        case "h3":
+            return text[4:]
+        case "h4":
+            return text[5:]
+        case "h5":
+            return text[6:]
+        case "h6":
+            return text[7:]
+        case _:
+            raise Exception(f"Invalid heading level: {heading_level}")
+        
+def __sanitize_quote(text : str) -> str:
+    return text.replace(">", "")
+
 def __get_list_item_html_nodes(text : str, block_type : BlockType) -> list[HTMLNode]:
     text_items = text.split("\n")
     list_items = []
@@ -199,4 +223,9 @@ def __get_list_item_html_nodes(text : str, block_type : BlockType) -> list[HTMLN
         children = text_to_children(sanitized)
         list_items.append(ParentNode("li", children))
     return list_items
-        
+
+def extract_title(markdown:str) -> str:
+    for line in markdown.split("\n"):
+        if line[:2] == "# ":
+            return line[2:].strip()
+    raise Exception(f"No h1 header in markdown: {markdown}")
