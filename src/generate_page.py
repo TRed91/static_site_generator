@@ -1,7 +1,7 @@
 import os
 from utility_functions import markdown_to_html_node, extract_title
 
-def generate_page(from_path : str, template_path : str, dest_path : str) -> None:
+def generate_page(from_path : str, template_path : str, dest_path : str, basepath : str) -> None:
     
     if not os.path.exists(from_path):
         raise Exception(f"Source path does not exist {from_path}")
@@ -29,6 +29,9 @@ def generate_page(from_path : str, template_path : str, dest_path : str) -> None
 
         html = template_content.replace("{{ Title }}", title)
         html = html.replace("{{ Content }}", html_string)
+
+        html = html.replace('"href="/', f'href="{basepath}')
+        html = html.replace('src="/', f'src="{basepath}')
 
         if not os.path.exists(dest_path):
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)

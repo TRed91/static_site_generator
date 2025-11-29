@@ -1,14 +1,14 @@
-from textnode import TextNode, TextType
-from htmlnode import HTMLNode
-from leafnode import LeafNode
-from parentnode import ParentNode
-from utility_functions import markdown_to_html_node
+import sys
 from generate_pages import generate_pages_recursive
 from copy_files import copy_files
 
 def main():
+
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
    
-    copy_files("static", "public")
-    generate_pages_recursive("content", "template.html", "public")
+    copy_files("static", "docs")
+    generate_pages_recursive("content", "template.html", "docs", basepath)
     
 main()

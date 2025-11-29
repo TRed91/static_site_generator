@@ -1,7 +1,7 @@
 import os
 from generate_page import generate_page
 
-def generate_pages_recursive(dir_path_content : str, template_path : str, dest_dir_path : str):
+def generate_pages_recursive(dir_path_content : str, template_path : str, dest_dir_path : str, basepath : str):
     if not os.path.exists(dir_path_content):
         raise Exception(f"Content directory does not exist: {dir_path_content}")
     if not os.path.exists(template_path) or os.path.isdir(template_path):
@@ -17,11 +17,11 @@ def generate_pages_recursive(dir_path_content : str, template_path : str, dest_d
 
             if os.path.isfile(source_path):
                 dest_path = __filename_md_to_html(dest_path)
-                generate_page(source_path, template_path, dest_path)
+                generate_page(source_path, template_path, dest_path, basepath)
             else:
                 if not os.path.exists(dest_path):
                     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                generate_pages_recursive(source_path, template_path, dest_path)
+                generate_pages_recursive(source_path, template_path, dest_path, basepath)
     
     except Exception:
         raise
